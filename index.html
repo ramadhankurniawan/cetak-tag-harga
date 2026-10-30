@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Cetak Tag Harga dari Excel</title>
+    <!-- Favicon Default -->
+    <link rel="icon" type="image/png" href="logo.png" id="favicon">
+
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #eee;
+        }
+        .no-print {
+            background: #222;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 15px;
+        }
+        .control-group {
+            display: inline-block;
+            margin: 10px;
+            text-align: left;
+            background: #333;
+            padding: 10px;
+            border-radius: 6px;
+            vertical-align: top;
+        }
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #ddd;
+        }
+        .no-print input[type="file"],
+        .no-print input[type="text"] {
+            padding: 6px;
+            background: white;
+            color: black;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn-print {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 11px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .btn-print:hover {
+            background-color: #218838;
+        }
+
+        .sheet {
+            width: 21cm;
+            background: white;
+            margin: 20px auto;
+            padding: 0.5cm;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: repeat(3, 6cm);
+            gap: 0.3cm;
+            align-content: start;
+        }
+        
+        /* Desain Kotak Tag Harga (6cm x 3cm) */
+        .price-tag {
+            width: 6cm;
+            height: 3cm;
+            background-color: #fff;
+            box-sizing: border-box;
+            border: 1px dashed #999;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 0.15cm 0.2cm;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        /* Bagian Kiri: Logo + Nama Toko Dinamis */
+        .tag-left {
+            width: 34%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-right: 1px dashed #ccc;
+            padding-right: 0.1cm;
+        }
+
+        .tag-left img {
+            max-width: 80%;
+            max-height: 0.7cm;
+            object-fit: contain;
+            margin-bottom: 2px;
+        }
+
+        .store-name {
+            font-size: 7.5pt;
+            font-weight: bold;
+            color: #cc0000;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        /* Bagian Kanan: Nama Barang & Harga */
+        .tag-right {
+            width: 66%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 0.2cm;
+        }
+
+        .product-name {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.15;
+            margin-bottom: 2px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-price {
+            font-size: 10.5pt;
+            font-weight: bold;
+            color: #cc0000;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: transparent; }
+            .sheet { margin: 0; padding: 0; box-shadow: none; }
+            .price-tag { border: 1px solid #000; }
+        }
+    </style>
+    <!-- Library SheetJS untuk baca Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <!-- Panel Kontrol (Hanya tampil di layar, otomatis hilang saat diprint) -->
+    <div class="no-print">
+        <h2>Pusat Cetak Tag Harga Otomatis</h2>
+        <p>Atur identitas toko, upload Excel, lalu cetak:</p>
+        
+        <div class="control-group">
+            <label>1. Custom Nama Toko:</label>
+            <input type="text" id="inputStoreName" value="LANGON" placeholder="Nama Toko">
+        </div>
+
+        <div class="control-group">
+            <label>2. Custom Logo (Opsional):</label>
+            <input type="file" id="inputLogo" accept="image/*">
+        </div>
+
+        <div class="control-group">
+            <label>3. Upload File Excel:</label>
+            <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
+        </div>
+
+        <div>
+            <button class="btn-print" onclick="window.print()">🖨️ Cetak / Print Semua</button>
+        </div>
+    </div>
+
+    <!-- Area Tag Harga -->
+    <div class="sheet" id="tag-container">
+        <!-- Tag harga otomatis muncul di sini setelah file Excel dipilih -->
+    </div>
+
+    <script>
+        let excelDataRows = []; // Menyimpan data excel sementara
+        let customLogoSrc = "logo.png"; // Default logo
+
+        // Handle Upload Custom Logo
+        document.getElementById('inputLogo').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    customLogoSrc = event.target.result;
+                    renderTags(); // Refresh tampilan tag
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle Ubah Nama Toko secara Real-time
+        document.getElementById('inputStoreName').addEventListener('input', function() {
+            renderTags();
+        });
+
+        // Handle Upload File Excel
+        document.getElementById('excelFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // Simpan baris data Excel ke variabel global
+                excelDataRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                renderTags(); // Generate tag harga
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // Fungsi untuk merender ulang tag harga (Logo, Nama Toko, & Daftar Barang)
+        function renderTags() {
+            const container = document.getElementById('tag-container');
+            container.innerHTML = '';
+
+            const storeName = document.getElementById('inputStoreName').value || 'LANGON';
+
+            // Jika excel belum diupload, hentikan sementara
+            if (excelDataRows.length === 0) return;
+
+            // Mulai dari baris ke-2 (index 1) untuk melewati header
+            for (let i = 1; i < excelDataRows.length; i++) {
+                const row = excelDataRows[i];
+                if (row && row[0]) {
+                    const namaBarang = row[0];
+                    
+                    // Membersihkan teks harga agar terhindar dari NaN
+                    const rawPrice = String(row[1] || '0').replace(/[^0-9]/g, '');
+                    const hargaMentah = Number(rawPrice) || 0;
+                    const hargaBarang = 'Rp ' + hargaMentah.toLocaleString('id-ID');
+                    
+                    const tagHTML = `
+                        <div class="price-tag">
+                            <div class="tag-left">
+                                <img src="${customLogoSrc}" alt="Logo" onerror="this.style.display='none'">
+                                <div class="store-name">${storeName}</div>
+                            </div>
+                            <div class="tag-right">
+                                <div class="product-name">${namaBarang}</div>
+                                <div class="product-price">${hargaBarang}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += tagHTML;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
