@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Tag Harga dari Excel</title>
     <!-- Favicon Default -->
     <link rel="icon" type="image/png" href="logo.png" id="favicon">
@@ -16,22 +17,26 @@
             margin: 0;
             padding: 0;
             background: #eee;
+            box-sizing: border-box;
         }
         .no-print {
             background: #222;
             color: white;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
             font-size: 15px;
         }
         .control-group {
             display: inline-block;
-            margin: 10px;
+            margin: 8px;
             text-align: left;
             background: #333;
             padding: 10px;
             border-radius: 6px;
             vertical-align: top;
+            width: 250px;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .control-group label {
             display: block;
@@ -41,22 +46,26 @@
         }
         .no-print input[type="file"],
         .no-print input[type="text"] {
-            padding: 6px;
+            width: 100%;
+            padding: 8px;
             background: white;
             color: black;
             border: 1px solid #ccc;
             border-radius: 4px;
+            box-sizing: border-box;
         }
         .btn-print {
             background-color: #28a745;
             color: white;
             border: none;
-            padding: 11px 20px;
-            font-size: 14px;
+            padding: 12px 25px;
+            font-size: 15px;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
             margin-top: 15px;
+            width: 100%;
+            max-width: 300px;
         }
         .btn-print:hover {
             background-color: #218838;
@@ -64,6 +73,7 @@
 
         .sheet {
             width: 21cm;
+            max-width: 100%;
             background: white;
             margin: 20px auto;
             padding: 0.5cm;
@@ -72,6 +82,7 @@
             grid-template-columns: repeat(3, 6cm);
             gap: 0.3cm;
             align-content: start;
+            justify-content: center;
         }
         
         /* Desain Kotak Tag Harga (6cm x 3cm) */
@@ -143,10 +154,24 @@
             color: #cc0000;
         }
 
+        /* Responsif untuk Tampilan Layar HP / Mobile */
+        @media screen and (max-width: 768px) {
+            .sheet {
+                grid-template-columns: 1fr; /* Menjadikan 1 kolom ke bawah di HP agar tidak terpotong */
+                justify-items: center;
+                padding: 10px;
+            }
+            .control-group {
+                display: block;
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+
         @media print {
             .no-print { display: none; }
             body { background: transparent; }
-            .sheet { margin: 0; padding: 0; box-shadow: none; }
+            .sheet { margin: 0; padding: 0; box-shadow: none; grid-template-columns: repeat(3, 6cm); }
             .price-tag { border: 1px solid #000; }
         }
     </style>
